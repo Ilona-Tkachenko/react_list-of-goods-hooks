@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import 'bulma/css/bulma.css';
 import './App.scss';
-import classNames from 'classnames';
+import classN from 'classnames';
+
+export enum SortType {
+  None = 'none',
+  Alphabet = 'alphabet',
+  Length = 'length',
+}
 
 export const goodsFromServer: string[] = [
   'Dumplings',
@@ -16,32 +22,52 @@ export const goodsFromServer: string[] = [
   'Garlic',
 ];
 
-enum SortType {
-  Default = '',
-  Alphabetically = 'alphabetically',
-  ByLength = 'length',
+function prepareGoods(
+  goods: string[],
+  { sortType, reverse }: { sortType: SortType; reverse: boolean },
+): string[] {
+  const preparedGoods = [...goods];
+
+  if (sortType === SortType.Alphabet) {
+    preparedGoods.sort((a, b) => a.localeCompare(b));
+  }
+
+  if (sortType === SortType.Length) {
+    preparedGoods.sort((a, b) => a.length - b.length);
+  }
+
+  if (reverse) {
+    preparedGoods.reverse();
+  }
+
+  return preparedGoods;
 }
 
 export const App: React.FC = () => {
-  const [sortType, setSortType] = useState<SortType>(SortType.Default);
-  const [reversed, setReversed] = useState<boolean>(false);
-  const visibleGoods = [...goodsFromServer];
+  const [sortType, setSortType] = useState<SortType>(SortType.None);
+  const [reverse, setReverse] = useState(false);
 
-  if (sortType !== SortType.Default) {
-    visibleGoods.sort((good1, good2) => {
-      switch (sortType) {
-        case SortType.Alphabetically:
-          return good1.localeCompare(good2);
-        case SortType.ByLength:
-          return good1.length - good2.length;
-        default:
-          return 0;
-      }
-    });
+  const visibleGoods = prepareGoods(goodsFromServer, { sortType, reverse });
+
+  function handleSortByAlphabet() {
+    setSortType(prev =>
+      prev === SortType.Alphabet ? SortType.None : SortType.Alphabet,
+    );
   }
 
-  if (reversed) {
-    visibleGoods.reverse();
+  function handleSortByLength() {
+    setSortType(prev =>
+      prev === SortType.Length ? SortType.None : SortType.Length,
+    );
+  }
+
+  function handleReverse() {
+    setReverse(prev => !prev);
+  }
+
+  function resetSorting() {
+    setSortType(SortType.None);
+    setReverse(false);
   }
 
   return (
@@ -49,50 +75,39 @@ export const App: React.FC = () => {
       <div className="buttons">
         <button
           type="button"
-          className={classNames('button is-info', {
-            'is-light': sortType !== SortType.Alphabetically,
+          onClick={handleSortByAlphabet}
+          className={classN('button', 'is-info', {
+            'is-light': sortType !== SortType.Alphabet,
           })}
-          onClick={() => {
-            setSortType((prev: SortType) =>
-              prev === SortType.Alphabetically
-                ? SortType.Default
-                : SortType.Alphabetically,
-            );
-          }}
         >
           Sort alphabetically
         </button>
 
         <button
           type="button"
-          className={classNames('button is-success', {
-            'is-light': sortType !== SortType.ByLength,
+          onClick={handleSortByLength}
+          className={classN('button', 'is-info', {
+            'is-light': sortType !== SortType.Length,
           })}
-          onClick={() => {
-            setSortType((prev: SortType) =>
-              prev === SortType.ByLength ? SortType.Default : SortType.ByLength,
-            );
-          }}
         >
           Sort by length
         </button>
 
         <button
           type="button"
-          className={classNames('button is-warning', { 'is-light': !reversed })}
-          onClick={() => setReversed(!reversed)}
+          onClick={handleReverse}
+          className={classN('button', 'is-warning', {
+            'is-light': !reverse,
+          })}
         >
           Reverse
         </button>
 
-        {(sortType !== SortType.Default || reversed) && (
+        {(sortType !== SortType.None || reverse) && (
           <button
             type="button"
+            onClick={resetSorting}
             className="button is-danger is-light"
-            onClick={() => {
-              setSortType(SortType.Default);
-              setReversed(false);
-            }}
           >
             Reset
           </button>
@@ -101,7 +116,7 @@ export const App: React.FC = () => {
 
       <ul>
         {visibleGoods.map(good => (
-          <li data-cy="Good" key={good}>
+          <li key={good} data-cy="Good">
             {good}
           </li>
         ))}
